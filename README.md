@@ -37,24 +37,24 @@ python -m zmote.connector -t tcp -d 192.168.1.1 -c learn
 python -m zmote.connector -t htpp -d 192.168.1.1 -c send -p 1:1,0,36000,1,1,32,32,64,32,32,64,32,3264
 </code>
 
-#### To install for further development
+### To install for further development
 
 Prerequisites:
  * [virtualenvwrapper](https://virtualenvwrapper.readthedocs.io/en/latest/])
 
-Clone the repo
+#### Clone the repo
 <code>
 git clone https://github.com/initialed85/zmote
 cd zmote
 </code>
 
-Build the virtualenv
+#### Build the virtualenv
 <code>
 mkvirtualenv zmote
 pip install -r requirements-dev.txt
 </code>
 
-Run the tests
+#### Run the tests
 <code>
 py.test -v
 </code>
