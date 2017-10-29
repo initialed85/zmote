@@ -18,7 +18,9 @@ with the device (and not via the zmote.io cloud application).
 
 #### To install for use standalone/in your project
 
+<code>
 pip install zmote
+</code>
 
 ##### To actively discover two devices on your local network
 
