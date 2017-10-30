@@ -18,26 +18,18 @@ with the device (and not via the zmote.io cloud application).
 
 #### To install for use standalone/in your project
 
-<code>
-pip install zmote
-</code>
+<code>pip install zmote</code>
 
 ##### To actively discover two devices on your local network
 
-<code>
-python -m zmote.discoverer -u 2 -a
-</code>  
+<code>python -m zmote.discoverer -u 2 -a</code>  
 
 ##### To put a device into learn mode via TCP
 
-<code>
-python -m zmote.connector -t tcp -d 192.168.1.1 -c learn
-</code>
+<code>python -m zmote.connector -t tcp -d 192.168.1.1 -c learn</code>
 
 ##### To tell a device to send an IR signal via HTTP
-<code>
-python -m zmote.connector -t htpp -d 192.168.1.1 -c send -p 1:1,0,36000,1,1,32,32,64,32,32,64,32,3264
-</code>
+<code>python -m zmote.connector -t http -d 192.168.1.1 -c send -p 1:1,0,36000,1,1,32,32,64,32,32,64,32,3264</code>
 
 ### To install for further development
 
@@ -45,18 +37,14 @@ Prerequisites:
  * [virtualenvwrapper](https://virtualenvwrapper.readthedocs.io/en/latest/])
 
 #### Clone the repo
-<code>
-git clone https://github.com/initialed85/zmote
-cd zmote
-</code>
+<code>git clone https://github.com/initialed85/zmote
+
+cd zmote</code>
 
 #### Build the virtualenv
-<code>
-mkvirtualenv zmote
-pip install -r requirements-dev.txt
-</code>
+<code>mkvirtualenv zmote
+
+pip install -r requirements-dev.txt</code>
 
 #### Run the tests
-<code>
-py.test -v
-</code>
+<code>py.test -v</code>
