@@ -117,7 +117,7 @@ class Discoverer(object):
         return zmotes_by_uuid
 
 
-def passive_discover_zmotes(unique_zmote_limit, uuid_to_look_for):
+def passive_discover_zmotes(unique_zmote_limit=None, uuid_to_look_for=None):
     d = Discoverer()
     d.bind()
     return d.discover(
@@ -126,7 +126,7 @@ def passive_discover_zmotes(unique_zmote_limit, uuid_to_look_for):
     )
 
 
-def active_discover_zmotes(unique_zmote_count, uuid_to_look_for):
+def active_discover_zmotes(unique_zmote_count=None, uuid_to_look_for=None):
     d = Discoverer()
     d.bind()
     for i in range(0, 5):
