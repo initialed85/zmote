@@ -1,52 +1,101 @@
-import pprint
+import inspect
 import socket
 import struct
+import time
+from logging import getLogger
+
+_GROUP = '239.255.250.250'
+_RECEIVE_PORT = 9131
+_SEND_PORT = 9130
 
 
 class Discoverer(object):
-    def __init__(self, group='239.255.250.250', receive_port=9131, send_port=9130):
-        self._group = group
-        self._receive_port = receive_port
-        self._send_port = send_port
-
+    def __init__(self):
         self._sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
         self._sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
-        mreq = struct.pack("4sl", socket.inet_aton(self._group), socket.INADDR_ANY)
+        mreq = struct.pack("4sl", socket.inet_aton(_GROUP), socket.INADDR_ANY)
         self._sock.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, mreq)
 
+        self._logger = getLogger(self.__class__.__name__)
+        self._logger.debug('{0}()'.format(
+            inspect.currentframe().f_code.co_name
+        ))
+
     def bind(self):
-        self._sock.bind((self._group, self._receive_port))
+        self._logger.debug('{0}()'.format(
+            inspect.currentframe().f_code.co_name,
+        ))
+
+        self._sock.bind((_GROUP, _RECEIVE_PORT))
 
     def send(self):
+        self._logger.debug('{0}()'.format(
+            inspect.currentframe().f_code.co_name,
+        ))
+
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
-        sock.sendto('SENDAMXB', (self._group, self._send_port))
+        sock.sendto('SENDAMXB', (_GROUP, _SEND_PORT))
 
     def receive(self):
-        return self._sock.recv(1024)
+        data = self._sock.recv(1024)
 
-    @staticmethod
-    def parse(data):
+        self._logger.debug('{0}(); data={1}'.format(
+            inspect.currentframe().f_code.co_name, repr(data)
+        ))
+
+        return data
+
+    def parse(self, data):
+        self._logger.debug('{0}({1})'.format(
+            inspect.currentframe().f_code.co_name, repr(data)
+        ))
+
         if not data.startswith('AMXB') or not all([x in data for x in ['UUID', 'Type', 'Make', 'Model', 'Revision', 'Config-URL']]):
-            raise ValueError(
+            exception = ValueError(
                 'cannot parse data {0}; does not appear to be in correct format'.format(
                     repr(data)
                 )
             )
 
-        return dict([x[0:-1].split('=') for x in data.split('<-')[1:]])
+            self._logger.error('{0}({1}); exception={1}'.format(
+                inspect.currentframe().f_code.co_name, repr(data)
+            ))
+
+            raise exception
+
+        data = dict([x[0:-1].split('=') for x in data.split('<-')[1:]])
+
+        self._logger.debug('{0}({1}); data={1}'.format(
+            inspect.currentframe().f_code.co_name, repr(data)
+        ))
+
+        return data
 
     def discover(self, unique_zmote_limit=1):
         zmotes_by_uuid = {}
+
+        self._logger.debug('{0}({1})'.format(
+            inspect.currentframe().f_code.co_name, unique_zmote_limit
+        ))
 
         while len(zmotes_by_uuid) < unique_zmote_limit:
             data = self.receive()
 
             parsed_data = self.parse(data)
 
-            zmotes_by_uuid.update({
-                parsed_data['UUID']: parsed_data
+            ip = parsed_data.get('Config-URL').split('//')[-1].strip('/')
+            parsed_data.update({
+                'IP': ip,
             })
+
+            zmotes_by_uuid.update({
+                parsed_data['UUID']: parsed_data,
+            })
+
+        self._logger.debug('{0}({1}); zmotes_by_uuid={2}'.format(
+            inspect.currentframe().f_code.co_name, unique_zmote_limit, zmotes_by_uuid
+        ))
 
         return zmotes_by_uuid
 
@@ -54,22 +103,36 @@ class Discoverer(object):
 def passive_discover_zmotes(unique_zmote_limit=1):
     d = Discoverer()
     d.bind()
-    pprint.pprint(d.discover(
+    return d.discover(
         unique_zmote_limit=unique_zmote_limit
-    ))
+    )
 
 
 def active_discover_zmotes(unique_zmote_count=1):
     d = Discoverer()
     d.bind()
-    d.send()
-    pprint.pprint(d.discover(
+    for i in range(0, 5):
+        d.send()
+        time.sleep(0.1)
+    return d.discover(
         unique_zmote_limit=unique_zmote_count
-    ))
+    )
 
 
 if __name__ == '__main__':
     import argparse
+    import pprint
+
+    import logging
+
+    handler = logging.StreamHandler()
+    handler.setFormatter(
+        logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    )
+
+    logger = logging.getLogger(Discoverer.__name__)
+    logger.setLevel(logging.DEBUG)
+    logger.addHandler(handler)
 
     parser = argparse.ArgumentParser(
         description='Discover zmote.io devices on the local network',
@@ -95,6 +158,9 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     if args.active:
-        active_discover_zmotes(args.unique_zmote_limit)
+        zmotes = active_discover_zmotes(args.unique_zmote_limit)
     else:
-        passive_discover_zmotes(args.unique_zmote_limit)
+        zmotes = passive_discover_zmotes(args.unique_zmote_limit)
+
+    print ''
+    pprint.pprint(zmotes)

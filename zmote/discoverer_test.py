@@ -1,3 +1,4 @@
+import copy
 import unittest
 
 from hamcrest import assert_that, equal_to
@@ -18,9 +19,18 @@ _TEST_RESPONSE_PARSED = {
     'Revision': '2.1.4'
 }
 
+_TEST_RESPONSE_PARSED_WITH_IP = {
+    'IP': '192.168.1.12',
+    'UUID': 'CI00a1b2c3',
+    'Make': 'zmote.io',
+    'Config-URL': 'http://192.168.1.12',
+    'Model': 'ZV-2',
+    'Type': 'ZMT2',
+    'Revision': '2.1.4'
+}
+
 
 class DiscovererTest(unittest.TestCase):
-
     @patch('zmote.discoverer.socket')
     def setUp(self, socket):
         socket.inet_aton.return_value = '\xef\xff\xc0\x89'
@@ -33,18 +43,16 @@ class DiscovererTest(unittest.TestCase):
         socket.INADDR_ANY = 7
         socket.IP_ADD_MEMBERSHIP = 8
 
-        self._subject = Discoverer(
-            group='239.255.192.137',
-            receive_port=1337,
-        )
+        self._subject = Discoverer()
 
         assert_that(
             socket.mock_calls,
             equal_to([
                 call.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP),
                 call.socket().setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1),
-                call.inet_aton('239.255.192.137'),
-                call.socket().setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, '\xef\xff\xc0\x89\x00\x00\x00\x00\x07\x00\x00\x00\x00\x00\x00\x00')]
+                call.inet_aton('239.255.250.250'),
+                call.socket().setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP,
+                                         '\xef\xff\xc0\x89\x00\x00\x00\x00\x07\x00\x00\x00\x00\x00\x00\x00')]
             )
         )
 
@@ -56,7 +64,7 @@ class DiscovererTest(unittest.TestCase):
         assert_that(
             self._subject._sock.mock_calls,
             equal_to([
-                call.bind(('239.255.192.137', 1337))
+                call.bind(('239.255.250.250', 9131))
             ])
         )
 
@@ -72,7 +80,7 @@ class DiscovererTest(unittest.TestCase):
             socket.mock_calls,
             equal_to([
                 call.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP),
-                call.socket().sendto('SENDAMXB', ('239.255.192.137', 9130))
+                call.socket().sendto('SENDAMXB', ('239.255.250.250', 9130))
             ])
         )
 
@@ -93,11 +101,11 @@ class DiscovererTest(unittest.TestCase):
     def test_discover(self):
         self._subject.receive = MagicMock()
         self._subject.parse = MagicMock()
-        self._subject.parse.return_value = _TEST_RESPONSE_PARSED
+        self._subject.parse.return_value = copy.deepcopy(_TEST_RESPONSE_PARSED)
 
         assert_that(
             self._subject.discover(unique_zmote_limit=1),
             equal_to({
-                _UUID: _TEST_RESPONSE_PARSED,
+                _UUID: _TEST_RESPONSE_PARSED_WITH_IP,
             })
         )

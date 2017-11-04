@@ -29,7 +29,7 @@ class HTTPTransportTest(unittest.TestCase):
         assert_that(
             session().get.mock_calls[0:1],
             equal_to([
-                call('http://{0}/uuid'.format(self._subject._ip)),
+                call('http://{0}/uuid'.format(self._subject._ip), timeout=5),
             ])
         )
 
@@ -50,6 +50,7 @@ class HTTPTransportTest(unittest.TestCase):
                 call.post(
                     url='http://{0}/v2/{1}'.format(self._subject._ip, _UUID),
                     data=_TEST_SENDIR_REQUEST,
+                    timeout=5,
                 )
             ])
         )
