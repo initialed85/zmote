@@ -20,9 +20,17 @@ with the device (and not via the zmote.io cloud application).
 
 <code>pip install zmote</code>
 
+##### To passively discover all devices on your network until timeout (30 seconds)
+
+<code>python -m zmote.discoverer</code>  
+
 ##### To actively discover two devices on your local network
 
-<code>python -m zmote.discoverer -u 2 -a</code>  
+<code>python -m zmote.discoverer -l 2 -a</code>  
+
+##### To passively discover a particular device on your local network (e.g. in case of DHCP)
+
+<code>python -m zmote.discoverer -u CI001f1234</code>  
 
 ##### To put a device into learn mode via TCP
 

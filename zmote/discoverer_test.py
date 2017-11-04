@@ -98,13 +98,25 @@ class DiscovererTest(unittest.TestCase):
             equal_to(_TEST_RESPONSE_PARSED)
         )
 
-    def test_discover(self):
+    def test_discover_limit(self):
         self._subject.receive = MagicMock()
         self._subject.parse = MagicMock()
         self._subject.parse.return_value = copy.deepcopy(_TEST_RESPONSE_PARSED)
 
         assert_that(
             self._subject.discover(unique_zmote_limit=1),
+            equal_to({
+                _UUID: _TEST_RESPONSE_PARSED_WITH_IP,
+            })
+        )
+
+    def test_discover_uuid(self):
+        self._subject.receive = MagicMock()
+        self._subject.parse = MagicMock()
+        self._subject.parse.return_value = copy.deepcopy(_TEST_RESPONSE_PARSED)
+
+        assert_that(
+            self._subject.discover(uuid_to_look_for='CI00a1b2c3'),
             equal_to({
                 _UUID: _TEST_RESPONSE_PARSED_WITH_IP,
             })

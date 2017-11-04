@@ -4,6 +4,8 @@ import struct
 import time
 from logging import getLogger
 
+socket.setdefaulttimeout(30)
+
 _GROUP = '239.255.250.250'
 _RECEIVE_PORT = 9131
 _SEND_PORT = 9130
@@ -72,15 +74,30 @@ class Discoverer(object):
 
         return data
 
-    def discover(self, unique_zmote_limit=1):
+    def discover(self, unique_zmote_limit=None, uuid_to_look_for=None):
+        if unique_zmote_limit is not None and uuid_to_look_for is not None:
+            raise ValueError('must specify only one (or neither) of unique_zmote_limit or uuid_to_look_for')
+
         zmotes_by_uuid = {}
 
         self._logger.debug('{0}({1})'.format(
             inspect.currentframe().f_code.co_name, unique_zmote_limit
         ))
 
-        while len(zmotes_by_uuid) < unique_zmote_limit:
-            data = self.receive()
+        def keep_waiting():
+            if unique_zmote_limit is not None:
+                if len(zmotes_by_uuid) >= unique_zmote_limit:
+                    return False
+            elif uuid_to_look_for in zmotes_by_uuid:
+                return False
+
+            return True
+
+        while keep_waiting():
+            try:
+                data = self.receive()
+            except socket.timeout:
+                break
 
             parsed_data = self.parse(data)
 
@@ -100,22 +117,24 @@ class Discoverer(object):
         return zmotes_by_uuid
 
 
-def passive_discover_zmotes(unique_zmote_limit=1):
+def passive_discover_zmotes(unique_zmote_limit, uuid_to_look_for):
     d = Discoverer()
     d.bind()
     return d.discover(
-        unique_zmote_limit=unique_zmote_limit
+        unique_zmote_limit=unique_zmote_limit,
+        uuid_to_look_for=uuid_to_look_for,
     )
 
 
-def active_discover_zmotes(unique_zmote_count=1):
+def active_discover_zmotes(unique_zmote_count, uuid_to_look_for):
     d = Discoverer()
     d.bind()
     for i in range(0, 5):
         d.send()
         time.sleep(0.1)
     return d.discover(
-        unique_zmote_limit=unique_zmote_count
+        unique_zmote_limit=unique_zmote_count,
+        uuid_to_look_for=uuid_to_look_for,
     )
 
 
@@ -135,16 +154,24 @@ if __name__ == '__main__':
     logger.addHandler(handler)
 
     parser = argparse.ArgumentParser(
-        description='Discover zmote.io devices on the local network',
+        description='Discover zmote.io devices on the local network- default behaviour with no arguments is to time out after 30 seconds',
         epilog='See http://www.zmote.io/apis for more detail'
     )
 
     parser.add_argument(
-        '-u',
+        '-l',
         '--unique-zmote-limit',
         type=int,
-        default=1,
-        help='number of unique devices to wait for (default 1)',
+        default=None,
+        help='number of unique devices to wait for',
+    )
+
+    parser.add_argument(
+        '-u',
+        '--uuid-to-look-for',
+        type=str,
+        default=None,
+        help='UUID of a device to wait for',
     )
 
     parser.add_argument(
@@ -157,10 +184,13 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
+    if args.unique_zmote_limit is not None and args.uuid_to_look_for is not None:
+        parser.error('must specify only one (or neither) of --unique-zmote-limit or --uuid-to-look-for')
+
     if args.active:
-        zmotes = active_discover_zmotes(args.unique_zmote_limit)
+        zmotes = active_discover_zmotes(args.unique_zmote_limit, args.uuid_to_look_for)
     else:
-        zmotes = passive_discover_zmotes(args.unique_zmote_limit)
+        zmotes = passive_discover_zmotes(args.unique_zmote_limit, args.uuid_to_look_for)
 
     print ''
     pprint.pprint(zmotes)
