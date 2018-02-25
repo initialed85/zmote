@@ -8,7 +8,7 @@ from zmote.discoverer_test import _UUID
 
 _TEST_SENDIR_REQUEST = 'sendir,1:1,0,36000,1,1,32,32,64,32,32,64,32,3264'
 
-_TEST_SENDIR_RESPONSE = 'completeir,1:1,0'
+_TEST_SENDIR_RESPONSE = b'completeir,1:1,0'
 
 
 class HTTPTransportTest(unittest.TestCase):
@@ -98,13 +98,13 @@ class TCPTransportTest(unittest.TestCase):
 
         assert_that(
             self._subject.call(_TEST_SENDIR_REQUEST),
-            equal_to(_TEST_SENDIR_RESPONSE)
+            equal_to(_TEST_SENDIR_RESPONSE.decode())
         )
 
         assert_that(
             self._subject._sock.mock_calls,
             equal_to([
-                call.send('sendir,1:1,0,36000,1,1,32,32,64,32,32,64,32,3264'),
+                call.send(b'sendir,1:1,0,36000,1,1,32,32,64,32,32,64,32,3264'),
                 call.recv(1024)
             ])
         )

@@ -1,8 +1,9 @@
 import inspect
 import socket
-import struct
 import time
 from logging import getLogger
+
+import struct
 
 socket.setdefaulttimeout(30)
 
@@ -16,7 +17,11 @@ class Discoverer(object):
         self._sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
         self._sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
-        mreq = struct.pack("4sl", socket.inet_aton(_GROUP), socket.INADDR_ANY)
+        mreq = struct.pack(
+            "4sL",
+            socket.inet_aton(_GROUP),
+            socket.INADDR_ANY
+        )
         self._sock.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, mreq)
 
         self._logger = getLogger(self.__class__.__name__)
@@ -37,7 +42,7 @@ class Discoverer(object):
         ))
 
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
-        sock.sendto('SENDAMXB', (_GROUP, _SEND_PORT))
+        sock.sendto(b'SENDAMXB', (_GROUP, _SEND_PORT))
 
     def receive(self):
         data = self._sock.recv(1024)
@@ -53,7 +58,11 @@ class Discoverer(object):
             inspect.currentframe().f_code.co_name, repr(data)
         ))
 
-        if not data.startswith('AMXB') or not all([x in data for x in ['UUID', 'Type', 'Make', 'Model', 'Revision', 'Config-URL']]):
+        data = data.decode('ascii')
+
+        if not data.startswith('AMXB') or not all(
+                [x in data for x in ['UUID', 'Type', 'Make', 'Model', 'Revision', 'Config-URL']]
+        ):
             exception = ValueError(
                 'cannot parse data {0}; does not appear to be in correct format'.format(
                     repr(data)
@@ -192,5 +201,5 @@ if __name__ == '__main__':
     else:
         zmotes = passive_discover_zmotes(args.unique_zmote_limit, args.uuid_to_look_for)
 
-    print ''
+    print('')
     pprint.pprint(zmotes)

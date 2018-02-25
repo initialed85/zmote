@@ -97,11 +97,11 @@ class TCPTransport(object):
             inspect.currentframe().f_code.co_name, repr(data),
         ))
 
-        self._sock.send(data)
+        self._sock.send(data.encode())
 
-        buf = self._sock.recv(1024)
+        buf = self._sock.recv(1024).decode()
         if 'IR Learner Enabled' in buf:
-            buf += self._sock.recv(1024)
+            buf += self._sock.recv(1024).decode()
 
         self._logger.debug('{0}({1}); buf={2}'.format(
             inspect.currentframe().f_code.co_name, repr(data), repr(buf)

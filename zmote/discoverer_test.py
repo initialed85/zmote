@@ -1,6 +1,6 @@
-import copy
 import unittest
 
+import copy
 from hamcrest import assert_that, equal_to
 from mock import patch, call, MagicMock
 
@@ -8,7 +8,9 @@ from zmote.discoverer import Discoverer
 
 _UUID = 'CI00a1b2c3'
 
-_TEST_RESPONSE = 'AMXB<-UUID={0}><-Type=ZMT2><-Make=zmote.io><-Model=ZV-2><-Revision=2.1.4><-Config-URL=http://192.168.1.12>'.format(_UUID)
+_TEST_RESPONSE = 'AMXB<-UUID={0}><-Type=ZMT2><-Make=zmote.io><-Model=ZV-2><-Revision=2.1.4><-Config-URL=http://192.168.1.12>'.format(
+    _UUID
+).encode('iso-8859-1')
 
 _TEST_RESPONSE_PARSED = {
     'UUID': 'CI00a1b2c3',
@@ -33,7 +35,7 @@ _TEST_RESPONSE_PARSED_WITH_IP = {
 class DiscovererTest(unittest.TestCase):
     @patch('zmote.discoverer.socket')
     def setUp(self, socket):
-        socket.inet_aton.return_value = '\xef\xff\xc0\x89'
+        socket.inet_aton.return_value = b'\xef\xff\xc0\x89'
         socket.AF_INET = 1
         socket.SOCK_DGRAM = 2
         socket.IPPROTO_UDP = 3
@@ -51,9 +53,11 @@ class DiscovererTest(unittest.TestCase):
                 call.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP),
                 call.socket().setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1),
                 call.inet_aton('239.255.250.250'),
-                call.socket().setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP,
-                                         '\xef\xff\xc0\x89\x00\x00\x00\x00\x07\x00\x00\x00\x00\x00\x00\x00')]
-            )
+                call.socket().setsockopt(
+                    socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP,
+                    b'\xef\xff\xc0\x89\x00\x00\x00\x00\x07\x00\x00\x00\x00\x00\x00\x00'
+                )
+            ])
         )
 
         self._subject._sock.mock_calls = []
@@ -80,7 +84,7 @@ class DiscovererTest(unittest.TestCase):
             socket.mock_calls,
             equal_to([
                 call.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP),
-                call.socket().sendto('SENDAMXB', ('239.255.250.250', 9130))
+                call.socket().sendto(b'SENDAMXB', ('239.255.250.250', 9130))
             ])
         )
 
